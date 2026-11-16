@@ -98,22 +98,25 @@ fun VaultDashboardScreen(
 
     // Launcher for selecting a file to encrypt
     val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            val cursor = context.contentResolver.query(uri, null, null, null, null)
-            var fileName = "vault_import_${System.currentTimeMillis()}"
-            var mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+            try {
+                var fileName = "vault_import_${System.currentTimeMillis()}"
+                var mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
 
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex != -1) {
-                        fileName = it.getString(nameIndex)
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex != -1) {
+                            fileName = cursor.getString(nameIndex) ?: fileName
+                        }
                     }
                 }
+                onImportFile(uri, fileName, mimeType)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            onImportFile(uri, fileName, mimeType)
         }
     }
 
@@ -347,7 +350,11 @@ fun VaultDashboardScreen(
         // Floating Action Button to Import & Encrypt
         FloatingActionButton(
             onClick = {
-                filePickerLauncher.launch(arrayOf("*/*"))
+                try {
+                    filePickerLauncher.launch("*/*")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             },
             containerColor = VaultCyan,
             contentColor = VaultBg,
