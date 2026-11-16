@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">ZeroVault</string>
+    <string name="security_desc">Hardware-backed encrypted file vault with threat mitigation</string>
+    <string name="biometric_title">ZeroVault Security Verification</string>
+    <string name="biometric_subtitle">Authenticate via Fingerprint or Face ID</string>
+    <string name="biometric_negative">Use Master PIN</string>
+</resources>

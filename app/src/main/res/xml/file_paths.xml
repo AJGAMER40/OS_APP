@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Scoped cache directory for secure temporary file sharing/decryption export -->
+    <cache-path name="vault_export" path="vault_temp/" />
+</paths>
