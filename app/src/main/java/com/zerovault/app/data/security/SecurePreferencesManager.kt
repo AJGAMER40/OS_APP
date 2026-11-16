@@ -23,6 +23,9 @@ class SecurePreferencesManager(
         private const val KEY_PIN_SALT = "sec_pin_salt"
         private const val KEY_PIN_HASH = "sec_pin_hash"
         private const val KEY_PIN_CONFIGURED = "sec_pin_configured"
+        private const val KEY_DURESS_PIN_SALT = "sec_duress_pin_salt"
+        private const val KEY_DURESS_PIN_HASH = "sec_duress_pin_hash"
+        private const val KEY_DURESS_PIN_CONFIGURED = "sec_duress_pin_configured"
         private const val KEY_BIOMETRICS_ENABLED = "sec_biometrics_enabled"
         private const val KEY_FAILED_ATTEMPTS = "sec_failed_attempts"
         private const val KEY_LOCKOUT_TIMESTAMP = "sec_lockout_timestamp"
@@ -87,6 +90,43 @@ class SecurePreferencesManager(
         MemorySanitizer.wipe(saltBytes)
 
         // Constant-time comparison to prevent timing attacks
+        return MessageDigest.isEqual(storedHash.toByteArray(Charsets.UTF_8), computedHash.toByteArray(Charsets.UTF_8))
+    }
+
+    fun isDuressPinConfigured(): Boolean {
+        return sharedPreferences.getBoolean(KEY_DURESS_PIN_CONFIGURED, false)
+    }
+
+    /**
+     * Configures the secondary Plausible Deniability / Duress PIN (e.g. 999999).
+     */
+    fun setDuressPin(pin: CharArray) {
+        val random = SecureRandom()
+        val saltBytes = ByteArray(16)
+        random.nextBytes(saltBytes)
+        val saltHex = saltBytes.toHexString()
+
+        val hashedPin = hashPinWithSalt(pin, saltBytes)
+        MemorySanitizer.wipe(saltBytes)
+
+        sharedPreferences.edit()
+            .putString(KEY_DURESS_PIN_SALT, saltHex)
+            .putString(KEY_DURESS_PIN_HASH, hashedPin)
+            .putBoolean(KEY_DURESS_PIN_CONFIGURED, true)
+            .apply()
+    }
+
+    /**
+     * Validates if the entered PIN matches the Canary / Duress PIN.
+     */
+    fun verifyDuressPin(enteredPin: CharArray): Boolean {
+        val storedSaltHex = sharedPreferences.getString(KEY_DURESS_PIN_SALT, null) ?: return false
+        val storedHash = sharedPreferences.getString(KEY_DURESS_PIN_HASH, null) ?: return false
+
+        val saltBytes = storedSaltHex.hexToByteArray()
+        val computedHash = hashPinWithSalt(enteredPin, saltBytes)
+        MemorySanitizer.wipe(saltBytes)
+
         return MessageDigest.isEqual(storedHash.toByteArray(Charsets.UTF_8), computedHash.toByteArray(Charsets.UTF_8))
     }
 

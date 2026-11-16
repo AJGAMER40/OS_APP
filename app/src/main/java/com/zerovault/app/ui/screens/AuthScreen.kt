@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.zerovault.app.auth.AuthScreenMode
 import com.zerovault.app.auth.AuthUiState
 import com.zerovault.app.ui.components.PinDotsView
+import com.zerovault.app.ui.components.QuantumShieldCanvas
 import com.zerovault.app.ui.components.SecureKeypad
 import com.zerovault.app.ui.components.ThreatBadge
 import com.zerovault.app.ui.theme.TextMuted
@@ -78,20 +79,11 @@ fun AuthScreen(
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Vault Security Icon
-                Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .background(VaultSurface, RoundedCornerShape(20.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Security,
-                        contentDescription = "ZeroVault Logo",
-                        tint = VaultCyan,
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
+                // Animated Quantum Shield
+                QuantumShieldCanvas(
+                    size = 80.dp,
+                    shieldColor = VaultCyan
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 

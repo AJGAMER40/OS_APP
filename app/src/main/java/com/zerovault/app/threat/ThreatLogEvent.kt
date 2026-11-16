@@ -14,7 +14,8 @@ enum class ThreatEventType {
     RAM_SANITIZED,
     WORKMANAGER_ENGAGED,
     LOCKOUT_EXPIRED,
-    MANUAL_LOCK
+    MANUAL_LOCK,
+    COERCION_DURESS
 }
 
 enum class ThreatSeverity {

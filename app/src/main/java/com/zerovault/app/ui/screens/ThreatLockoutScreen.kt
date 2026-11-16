@@ -244,6 +244,7 @@ fun ThreatLockoutScreen(
                             ThreatEventType.LOCKOUT_EXPIRED -> VaultEmerald
                             ThreatEventType.AUTH_SUCCESS -> VaultEmerald
                             ThreatEventType.MANUAL_LOCK -> TextMuted
+                            ThreatEventType.COERCION_DURESS -> VaultCrimson
                         }
 
                         Text(

@@ -133,6 +133,19 @@ class ThreatMonitor(
     }
 
     /**
+     * Registers a Duress / Canary PIN trigger.
+     * Silently sanitizes sensitive RAM and logs forensic alert.
+     */
+    fun registerDuress() {
+        MemorySanitizer.purgeAll()
+        addLog(
+            ThreatEventType.BRUTE_FORCE_TRIGGER,
+            "COVERT ALERT: Duress Canary PIN entered. Real enclave quarantined & memory sanitized.",
+            ThreatSeverity.CRITICAL
+        )
+    }
+
+    /**
      * Executes the emergency mitigation protocol.
      */
     private fun triggerEmergencyLockdown() {

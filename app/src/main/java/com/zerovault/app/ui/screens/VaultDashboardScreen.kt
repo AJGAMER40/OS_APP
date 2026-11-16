@@ -64,6 +64,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zerovault.app.data.model.VaultFileRecord
+import com.zerovault.app.ui.components.QuantumShieldCanvas
+import com.zerovault.app.ui.dialogs.SecureIngestionDialog
 import com.zerovault.app.ui.theme.BorderSubtle
 import com.zerovault.app.ui.theme.TextMuted
 import com.zerovault.app.ui.theme.TextPrimary
@@ -84,7 +86,7 @@ import java.util.Locale
 fun VaultDashboardScreen(
     uiState: VaultUiState,
     onSearchChanged: (String) -> Unit,
-    onImportFile: (uri: Uri, name: String, mime: String) -> Unit,
+    onImportFile: (uri: Uri, name: String, mime: String, shredOriginal: Boolean) -> Unit,
     onPreviewFile: (VaultFileRecord) -> Unit,
     onExportFile: (VaultFileRecord, destinationUri: Uri) -> Unit,
     onShredFile: (VaultFileRecord) -> Unit,
@@ -95,6 +97,11 @@ fun VaultDashboardScreen(
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Pending file ingestion with DoD Shredder option
+    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingImportName by remember { mutableStateOf("") }
+    var pendingImportMime by remember { mutableStateOf("") }
 
     // Launcher for selecting a file to encrypt
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -113,7 +120,9 @@ fun VaultDashboardScreen(
                         }
                     }
                 }
-                onImportFile(uri, fileName, mimeType)
+                pendingImportUri = uri
+                pendingImportName = fileName
+                pendingImportMime = mimeType
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -161,21 +170,10 @@ fun VaultDashboardScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(VaultSurfaceCard)
-                            .border(1.dp, BorderSubtle, RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = null,
-                            tint = VaultCyan,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                    QuantumShieldCanvas(
+                        size = 38.dp,
+                        shieldColor = VaultCyan
+                    )
 
                     Column {
                         Text(
@@ -343,6 +341,9 @@ fun VaultDashboardScreen(
                             onShred = { onShredFile(record) }
                         )
                     }
+                    item {
+                        Spacer(modifier = Modifier.height(84.dp))
+                    }
                 }
             }
         }
@@ -361,7 +362,7 @@ fun VaultDashboardScreen(
             shape = CircleShape,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(24.dp)
+                .padding(bottom = 90.dp, end = 20.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
@@ -370,11 +371,26 @@ fun VaultDashboardScreen(
             )
         }
 
+        // Secure Ingestion Dialog (DoD 5220.22-M 3-Pass Shred vs Standard Encrypt)
+        if (pendingImportUri != null) {
+            SecureIngestionDialog(
+                fileName = pendingImportName,
+                onConfirmIngestion = { shredOriginal ->
+                    val uri = pendingImportUri ?: return@SecureIngestionDialog
+                    onImportFile(uri, pendingImportName, pendingImportMime, shredOriginal)
+                    pendingImportUri = null
+                },
+                onDismiss = {
+                    pendingImportUri = null
+                }
+            )
+        }
+
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp)
+                .padding(bottom = 90.dp)
         )
     }
 }

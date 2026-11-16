@@ -2,6 +2,7 @@ package com.zerovault.app
 
 import android.app.Application
 import android.util.Log
+import com.zerovault.app.data.security.DoDShredder
 import com.zerovault.app.data.security.EncryptedFileManager
 import com.zerovault.app.data.security.KeystoreManager
 import com.zerovault.app.data.security.SecurePreferencesManager
@@ -22,6 +23,8 @@ class ZeroVaultApplication : Application() {
         private set
     lateinit var encryptedFileManager: EncryptedFileManager
         private set
+    lateinit var doDShredder: DoDShredder
+        private set
     lateinit var threatMonitor: ThreatMonitor
         private set
 
@@ -33,6 +36,7 @@ class ZeroVaultApplication : Application() {
         keystoreManager = KeystoreManager(this)
         securePreferencesManager = SecurePreferencesManager(this, keystoreManager.masterKey)
         encryptedFileManager = EncryptedFileManager(this, keystoreManager.masterKey, securePreferencesManager)
+        doDShredder = DoDShredder(this)
 
         // 2. Initialize Threat Monitoring System
         threatMonitor = ThreatMonitor(this, securePreferencesManager)

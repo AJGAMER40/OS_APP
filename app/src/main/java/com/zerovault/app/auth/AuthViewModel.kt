@@ -33,7 +33,8 @@ data class AuthUiState(
     val remainingAttempts: Int = 3,
     val isLockedOut: Boolean = false,
     val lockoutSecondsRemaining: Int = 0,
-    val isAuthenticated: Boolean = false
+    val isAuthenticated: Boolean = false,
+    val isDecoyMode: Boolean = false
 )
 
 class AuthViewModel(
@@ -50,21 +51,24 @@ class AuthViewModel(
     )
     private val _errorMessage = MutableStateFlow<String?>(null)
     private val _isAuthenticated = MutableStateFlow(false)
+    private val _isDecoyMode = MutableStateFlow(false)
 
     private data class InternalAuthState(
         val mode: AuthScreenMode,
         val pinLength: Int,
         val errorMessage: String?,
-        val isAuthenticated: Boolean
+        val isAuthenticated: Boolean,
+        val isDecoyMode: Boolean
     )
 
     private val internalState = combine(
         _mode,
         _currentPinChars,
         _errorMessage,
-        _isAuthenticated
-    ) { mode, pinChars, error, authenticated ->
-        InternalAuthState(mode, pinChars.size, error, authenticated)
+        _isAuthenticated,
+        _isDecoyMode
+    ) { mode, pinChars, error, authenticated, decoy ->
+        InternalAuthState(mode, pinChars.size, error, authenticated, decoy)
     }
 
     val uiState: StateFlow<AuthUiState> = combine(
@@ -89,7 +93,8 @@ class AuthViewModel(
             remainingAttempts = remaining,
             isLockedOut = locked,
             lockoutSecondsRemaining = seconds,
-            isAuthenticated = state.isAuthenticated
+            isAuthenticated = state.isAuthenticated,
+            isDecoyMode = state.isDecoyMode
         )
     }.stateIn(
         scope = viewModelScope,
@@ -167,11 +172,26 @@ class AuthViewModel(
                 }
             }
             AuthScreenMode.LOGIN_PIN -> {
+                val isDuress = securePreferencesManager.verifyDuressPin(pin) ||
+                        (!securePreferencesManager.isDuressPinConfigured() && String(pin) == "999999")
+
+                if (isDuress) {
+                    // Physical Coercion Defense Engaged: Silently transition to Decoy Vault
+                    MemorySanitizer.purgeAll()
+                    _isDecoyMode.value = true
+                    _isAuthenticated.value = true
+                    _errorMessage.value = null
+                    threatMonitor.registerDuress()
+                    clearPinInput()
+                    return
+                }
+
                 val isValid = securePreferencesManager.verifyPin(pin)
                 clearPinInput()
 
                 if (isValid) {
                     threatMonitor.registerSuccess()
+                    _isDecoyMode.value = false
                     _isAuthenticated.value = true
                     _errorMessage.value = null
                 } else {
@@ -206,6 +226,7 @@ class AuthViewModel(
     fun lockVault() {
         MemorySanitizer.purgeAll()
         _isAuthenticated.value = false
+        _isDecoyMode.value = false
         clearPinInput()
         _mode.value = if (securePreferencesManager.isPinConfigured()) {
             AuthScreenMode.LOGIN_PIN

@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zerovault.app.data.model.VaultFileRecord
+import com.zerovault.app.data.security.DoDShredder
 import com.zerovault.app.data.security.EncryptedFileManager
 import com.zerovault.app.data.security.MemorySanitizer
 import com.zerovault.app.data.security.SecurePreferencesManager
@@ -37,7 +38,8 @@ data class VaultUiState(
 
 class VaultViewModel(
     private val encryptedFileManager: EncryptedFileManager,
-    private val securePreferencesManager: SecurePreferencesManager
+    private val securePreferencesManager: SecurePreferencesManager,
+    private val doDShredder: DoDShredder
 ) : ViewModel() {
 
     private val _rawFiles = MutableStateFlow<List<VaultFileRecord>>(emptyList())
@@ -86,18 +88,26 @@ class VaultViewModel(
         _searchQuery.value = query
     }
 
-    fun encryptAndImport(uri: Uri, fileName: String, mimeType: String) {
+    fun encryptAndImport(uri: Uri, fileName: String, mimeType: String, shredSource: Boolean = false) {
         viewModelScope.launch {
             _isLoading.value = true
             _statusMessage.value = "Hardware encrypting $fileName via AES-256 GCM..."
             val result = encryptedFileManager.encryptFile(uri, fileName, mimeType)
-            _isLoading.value = false
             if (result.isSuccess) {
-                _statusMessage.value = "Encrypted & secured $fileName successfully."
+                if (shredSource) {
+                    _statusMessage.value = "Executing DoD 5220.22-M 3-pass shred on unencrypted source..."
+                    doDShredder.shredUri(uri).collect { progress ->
+                        _statusMessage.value = progress.passDescription
+                    }
+                    _statusMessage.value = "Encrypted $fileName into enclave & eradicated source from public storage."
+                } else {
+                    _statusMessage.value = "Encrypted & secured $fileName successfully."
+                }
                 loadFiles()
             } else {
                 _statusMessage.value = "Encryption failed: ${result.exceptionOrNull()?.message}"
             }
+            _isLoading.value = false
         }
     }
 
