@@ -31,6 +31,7 @@ import com.zerovault.app.ui.dialogs.SecurityAuditDialog
 import com.zerovault.app.ui.screens.AuthScreen
 import com.zerovault.app.ui.screens.CyberLabScreen
 import com.zerovault.app.ui.screens.DecoyVaultScreen
+import com.zerovault.app.ui.screens.SanctuaryWelcomeScreen
 import com.zerovault.app.ui.screens.ThreatHudScreen
 import com.zerovault.app.ui.screens.ThreatLockoutScreen
 import com.zerovault.app.ui.screens.VaultDashboardScreen
@@ -105,6 +106,7 @@ class MainActivity : FragmentActivity() {
 
         var currentTab by remember { mutableStateOf(CyberNavTab.VAULT_ENCLAVE) }
         var showSecurityAudit by remember { mutableStateOf(false) }
+        var showWelcomeScreen by remember { mutableStateOf(true) }
 
         // Automatically trigger Biometrics if configured and not locked out
         LaunchedEffect(authUiState.mode, authUiState.isBiometricsAvailable) {
@@ -128,13 +130,23 @@ class MainActivity : FragmentActivity() {
 
             // Priority 2: Authentication Required (Setup PIN / Enter PIN / Biometric)
             !authUiState.isAuthenticated -> {
-                AuthScreen(
-                    uiState = authUiState,
-                    onDigitEntered = { authViewModel.onDigitEntered(it) },
-                    onDeleteDigit = { authViewModel.onDeleteDigit() },
-                    onClearPin = { authViewModel.onClearPin() },
-                    onBiometricTrigger = { triggerBiometricPrompt() }
-                )
+                val isFirstTimeSetup = !authUiState.isPinConfigured
+                if (isFirstTimeSetup && showWelcomeScreen) {
+                    SanctuaryWelcomeScreen(
+                        onEnterSanctuary = { showWelcomeScreen = false }
+                    )
+                } else {
+                    AuthScreen(
+                        uiState = authUiState,
+                        onDigitEntered = { authViewModel.onDigitEntered(it) },
+                        onDeleteDigit = { authViewModel.onDeleteDigit() },
+                        onClearPin = { authViewModel.onClearPin() },
+                        onBiometricTrigger = { triggerBiometricPrompt() },
+                        onBackToWelcome = if (isFirstTimeSetup) {
+                            { showWelcomeScreen = true }
+                        } else null
+                    )
+                }
             }
 
             // Priority 3: Decoy Duress Safe (Plausible Deniability triggered by 999999)

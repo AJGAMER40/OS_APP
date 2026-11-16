@@ -30,14 +30,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.zerovault.app.ui.theme.BorderSubtle
-import com.zerovault.app.ui.theme.TextMuted
-import com.zerovault.app.ui.theme.VaultCyan
-import com.zerovault.app.ui.theme.VaultSurfaceCard
+import com.zerovault.app.ui.theme.SanctuaryGold
+import com.zerovault.app.ui.theme.SanctuaryMuted
+import com.zerovault.app.ui.theme.SanctuaryPineBorder
+import com.zerovault.app.ui.theme.SanctuaryPineSurface
+import com.zerovault.app.ui.theme.SanctuaryTheme
 
 enum class CyberNavTab {
     VAULT_ENCLAVE,
@@ -45,6 +51,13 @@ enum class CyberNavTab {
     THREAT_HUD
 }
 
+/**
+ * CyberBottomNav renders the floating navigation bar for the authenticated Sanctuary session.
+ * Features:
+ * - Subtle floating bar over evergreen surface
+ * - Golden indicator for active tab
+ * - Accessible TalkBack semantics and minimum touch targets
+ */
 @Composable
 fun CyberBottomNav(
     selectedTab: CyberNavTab,
@@ -54,16 +67,16 @@ fun CyberBottomNav(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 24.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(VaultSurfaceCard.copy(alpha = 0.95f))
-                .border(1.dp, BorderSubtle, RoundedCornerShape(24.dp))
-                .padding(6.dp),
+                .background(SanctuaryPineSurface.copy(alpha = 0.95f))
+                .border(1.dp, SanctuaryPineBorder, RoundedCornerShape(24.dp))
+                .padding(4.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -101,13 +114,13 @@ private fun NavItem(
     val interactionSource = remember { MutableInteractionSource() }
 
     val activeColor by animateColorAsState(
-        targetValue = if (isSelected) VaultCyan else TextMuted,
+        targetValue = if (isSelected) SanctuaryGold else SanctuaryMuted,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "nav_color"
     )
 
     val bgColor by animateColorAsState(
-        targetValue = if (isSelected) VaultCyan.copy(alpha = 0.12f) else Color.Transparent,
+        targetValue = if (isSelected) SanctuaryGold.copy(alpha = 0.12f) else Color.Transparent,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "nav_bg"
     )
@@ -118,9 +131,13 @@ private fun NavItem(
             .background(bgColor)
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(color = VaultCyan),
+                indication = ripple(color = SanctuaryGold),
                 onClick = onClick
             )
+            .semantics {
+                role = Role.Tab
+                contentDescription = "$title tab, ${if (isSelected) "selected" else "not selected"}"
+            }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -130,17 +147,34 @@ private fun NavItem(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = title,
+                contentDescription = null,
                 tint = activeColor,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(20.dp)
             )
             Text(
                 text = title,
-                fontSize = 10.sp,
+                fontSize = 9.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 letterSpacing = 0.5.sp,
                 color = activeColor
+            )
+        }
+    }
+}
+
+// =========================================================================
+// PREVIEWS
+// =========================================================================
+
+@Preview(name = "CyberBottomNav - Enclave Selected", showBackground = true, backgroundColor = 0xFF0C1B17)
+@Composable
+private fun CyberBottomNavPreview() {
+    SanctuaryTheme(darkTheme = true) {
+        Box(modifier = Modifier.padding(16.dp)) {
+            CyberBottomNav(
+                selectedTab = CyberNavTab.VAULT_ENCLAVE,
+                onTabSelected = {}
             )
         }
     }

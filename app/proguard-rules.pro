@@ -15,3 +15,7 @@
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
+
+# Compile-time annotations used by Google Tink / AndroidX Security Crypto
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**

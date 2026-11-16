@@ -1,11 +1,5 @@
 package com.zerovault.app.ui.screens
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,43 +12,67 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zerovault.app.threat.ThreatEventType
 import com.zerovault.app.threat.ThreatLogEvent
-import com.zerovault.app.ui.theme.BorderSubtle
-import com.zerovault.app.ui.theme.TextMuted
-import com.zerovault.app.ui.theme.TextPrimary
-import com.zerovault.app.ui.theme.TextSecondary
-import com.zerovault.app.ui.theme.VaultBg
-import com.zerovault.app.ui.theme.VaultCrimson
-import com.zerovault.app.ui.theme.VaultCrimsonBg
-import com.zerovault.app.ui.theme.VaultEmerald
-import com.zerovault.app.ui.theme.VaultSurface
-import com.zerovault.app.ui.theme.VaultSurfaceCard
+import com.zerovault.app.threat.ThreatSeverity
+import com.zerovault.app.ui.components.SanctuaryCard
+import com.zerovault.app.ui.components.SanctuaryScaffold
+import com.zerovault.app.ui.components.SanctuaryStatusChip
+import com.zerovault.app.ui.components.SanctuaryStatusLevel
+import com.zerovault.app.ui.theme.SanctuaryAmber
+import com.zerovault.app.ui.theme.SanctuaryAmberBg
+import com.zerovault.app.ui.theme.SanctuaryAmberLight
+import com.zerovault.app.ui.theme.SanctuaryCrimson
+import com.zerovault.app.ui.theme.SanctuaryCrimsonBg
+import com.zerovault.app.ui.theme.SanctuaryCrimsonLight
+import com.zerovault.app.ui.theme.SanctuaryEmerald
+import com.zerovault.app.ui.theme.SanctuaryEmeraldLight
+import com.zerovault.app.ui.theme.SanctuaryEyebrowStyle
+import com.zerovault.app.ui.theme.SanctuaryMuted
+import com.zerovault.app.ui.theme.SanctuaryPine
+import com.zerovault.app.ui.theme.SanctuaryPineBorder
+import com.zerovault.app.ui.theme.SanctuaryPineSurface
+import com.zerovault.app.ui.theme.SanctuaryStone
+import com.zerovault.app.ui.theme.SanctuaryTheme
+import com.zerovault.app.ui.theme.SanctuaryTypography
+import com.zerovault.app.ui.theme.SanctuaryWhite
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * ThreatLockoutScreen renders the calm, authoritative defense quarantine interface.
+ * Engaged when 3 consecutive invalid authentication attempts are detected.
+ *
+ * Security & Threat Model:
+ * - Visibly distinct from ordinary login: all keypads and biometric triggers disabled
+ * - Honest, informative presentation of active rate-limiting defense (no theatrical panic/sirens)
+ * - Hardware and memory defenses verified: RAM purged, WorkManager persistent quarantine timer
+ * - Chronological security event audit log displayed with verified timestamps
+ */
 @Composable
 fun ThreatLockoutScreen(
     remainingSeconds: Int,
@@ -63,88 +81,95 @@ fun ThreatLockoutScreen(
 ) {
     val totalSeconds = 60
     val progress = (remainingSeconds.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
+    val scrollState = rememberScrollState()
 
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(VaultBg)
-            .padding(24.dp)
-    ) {
+    SanctuaryScaffold(
+        modifier = modifier.fillMaxSize()
+    ) { innerPadding ->
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(scrollState)
+                .padding(horizontal = 24.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.Top
         ) {
-            // Top Threat Banner
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 480.dp)
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
+                // Rate-Limiting Quarantine Status Chip
+                SanctuaryStatusChip(
+                    label = "RATE-LIMITING DEFENSE ENGAGED",
+                    statusLevel = SanctuaryStatusLevel.LOCKDOWN
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Calm, Dignified Shield Badge (No flashing sirens or theatrical panic)
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(68.dp)
                         .clip(CircleShape)
-                        .background(VaultCrimsonBg)
-                        .border(2.dp, VaultCrimson.copy(alpha = pulseAlpha), CircleShape),
+                        .background(SanctuaryCrimsonBg)
+                        .border(1.5.dp, SanctuaryCrimson.copy(alpha = 0.6f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Threat Alert",
-                        tint = VaultCrimson,
-                        modifier = Modifier.size(44.dp)
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Defense Quarantine Active",
+                        tint = SanctuaryCrimsonLight,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "BRUTE-FORCE MITIGATION ENGAGED",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 1.sp,
-                    color = VaultCrimson,
+                    text = "RATE-LIMITING ACTIVE",
+                    style = SanctuaryEyebrowStyle,
+                    color = SanctuaryCrimsonLight,
+                    fontSize = 11.sp
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Quarantine Active",
+                    style = SanctuaryTypography.headlineMedium,
+                    color = SanctuaryWhite,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "3 Failed Attempts Detected. Interface locked for 60 seconds to mitigate brute-force and DoS dictionary attacks.",
-                    fontSize = 13.sp,
-                    color = TextSecondary,
+                    text = "3 invalid attempts detected. Interface and cryptographic operations quarantined for 60 seconds to protect master credentials against automated dictionary and brute-force attacks.",
+                    style = SanctuaryTypography.bodyMedium,
+                    color = SanctuaryMuted,
                     textAlign = TextAlign.Center,
                     lineHeight = 18.sp,
-                    modifier = Modifier.fillMaxWidth(0.9f)
+                    modifier = Modifier.fillMaxWidth(0.92f)
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Giant Circular Progress Countdown
+                // Dignified Circular Countdown Indicator
                 Box(
-                    modifier = Modifier.size(150.dp),
+                    modifier = Modifier.size(144.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
                         progress = { progress },
                         modifier = Modifier.fillMaxSize(),
-                        color = VaultCrimson,
-                        trackColor = VaultSurface,
-                        strokeWidth = 8.dp
+                        color = SanctuaryCrimsonLight,
+                        trackColor = SanctuaryPineSurface,
+                        strokeWidth = 6.dp
                     )
 
                     Column(
@@ -152,117 +177,137 @@ fun ThreatLockoutScreen(
                     ) {
                         Text(
                             text = String.format(Locale.US, "%02d", remainingSeconds),
-                            fontSize = 44.sp,
+                            style = SanctuaryTypography.displayMedium,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace,
-                            color = TextPrimary
+                            color = SanctuaryWhite
                         )
                         Text(
-                            text = "SECONDS",
-                            fontSize = 10.sp,
+                            text = "SECONDS REMAINING",
+                            fontSize = 9.sp,
                             fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.SemiBold,
-                            color = VaultCrimson,
-                            letterSpacing = 2.sp
+                            fontWeight = FontWeight.Bold,
+                            color = SanctuaryCrimsonLight,
+                            letterSpacing = 1.2.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Active Defenses Triggered Checklist
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(VaultSurfaceCard)
-                        .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
-                        .padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                SanctuaryCard(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    DefenseItem(
-                        title = "RAM Purged & Sanitized",
-                        desc = "Sensitive keys, decrypted buffers, and PIN chars overwritten with zeroes."
-                    )
-                    DefenseItem(
-                        title = "WorkManager Defense Task",
-                        desc = "Background quarantine worker active; persists across app restart."
-                    )
-                    DefenseItem(
-                        title = "Interface Hard-Locked",
-                        desc = "All inputs, keypad triggers, and navigation intents disabled."
-                    )
-                }
-            }
-
-            // Bottom Threat Log Monitor Terminal
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f, fill = false)
-                    .height(160.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(VaultSurface)
-                    .border(1.dp, BorderSubtle, RoundedCornerShape(10.dp))
-                    .padding(10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "SECURITY THREAT EVENT LOG",
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        color = VaultCrimson,
-                        letterSpacing = 1.sp
-                    )
-                    Box(
+                    Column(
                         modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(VaultCrimson)
-                            .alpha(pulseAlpha)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    items(threatLogs) { event ->
-                        val timeStr = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date(event.timestamp))
-                        val tagColor = when (event.type) {
-                            ThreatEventType.AUTH_FAILURE -> VaultCrimson
-                            ThreatEventType.BRUTE_FORCE_TRIGGER -> VaultCrimson
-                            ThreatEventType.RAM_SANITIZED -> VaultEmerald
-                            ThreatEventType.WORKMANAGER_ENGAGED -> VaultCrimson
-                            ThreatEventType.LOCKOUT_EXPIRED -> VaultEmerald
-                            ThreatEventType.AUTH_SUCCESS -> VaultEmerald
-                            ThreatEventType.MANUAL_LOCK -> TextMuted
-                            ThreatEventType.COERCION_DURESS -> VaultCrimson
-                        }
-
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Text(
-                            text = "[$timeStr] ${event.description}",
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = tagColor,
-                            lineHeight = 15.sp
+                            text = "AUTOMATED HARDWARE DEFENSES ENGAGED",
+                            style = SanctuaryEyebrowStyle,
+                            color = SanctuaryAmberLight,
+                            fontSize = 10.sp
+                        )
+
+                        DefenseCheckItem(
+                            title = "RAM Purged & Sanitized",
+                            desc = "Ephemeral key material, decrypted buffers, and PIN digits overwritten with zeroes in memory."
+                        )
+                        DefenseCheckItem(
+                            title = "WorkManager Quarantine Task",
+                            desc = "Background defense worker actively tracking rate-limiting window across process restarts."
+                        )
+                        DefenseCheckItem(
+                            title = "Interface Hard-Locked",
+                            desc = "Numeric keypad, biometric prompts, and credential verification intents disabled."
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Security Threat Event Log Terminal
+                SanctuaryCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "SECURITY AUDIT LOG",
+                                style = SanctuaryEyebrowStyle,
+                                color = SanctuaryCrimsonLight,
+                                fontSize = 10.sp
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(SanctuaryCrimsonLight)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        if (threatLogs.isEmpty()) {
+                            Text(
+                                text = "Awaiting security event telemetry...",
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = SanctuaryStone,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(150.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                items(threatLogs) { event ->
+                                    val timeStr = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date(event.timestamp))
+                                    val tagColor = when (event.type) {
+                                        ThreatEventType.AUTH_FAILURE -> SanctuaryCrimsonLight
+                                        ThreatEventType.BRUTE_FORCE_TRIGGER -> SanctuaryCrimsonLight
+                                        ThreatEventType.RAM_SANITIZED -> SanctuaryEmeraldLight
+                                        ThreatEventType.WORKMANAGER_ENGAGED -> SanctuaryAmberLight
+                                        ThreatEventType.LOCKOUT_EXPIRED -> SanctuaryEmeraldLight
+                                        ThreatEventType.AUTH_SUCCESS -> SanctuaryEmeraldLight
+                                        ThreatEventType.MANUAL_LOCK -> SanctuaryMuted
+                                        ThreatEventType.COERCION_DURESS -> SanctuaryCrimsonLight
+                                    }
+
+                                    Text(
+                                        text = "[$timeStr] ${event.description}",
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = tagColor,
+                                        lineHeight = 15.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 }
 
 @Composable
-private fun DefenseItem(
+private fun DefenseCheckItem(
     title: String,
     desc: String
 ) {
@@ -274,7 +319,7 @@ private fun DefenseItem(
         Icon(
             imageVector = Icons.Default.CheckCircle,
             contentDescription = null,
-            tint = VaultEmerald,
+            tint = SanctuaryEmerald,
             modifier = Modifier
                 .size(16.dp)
                 .padding(top = 2.dp)
@@ -282,16 +327,71 @@ private fun DefenseItem(
         Column {
             Text(
                 text = title,
-                fontSize = 12.sp,
+                style = SanctuaryTypography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
+                color = SanctuaryWhite,
+                fontSize = 12.sp
             )
             Text(
                 text = desc,
+                style = SanctuaryTypography.bodySmall,
+                color = SanctuaryMuted,
                 fontSize = 11.sp,
-                color = TextSecondary,
-                lineHeight = 14.sp
+                lineHeight = 15.sp
             )
         }
+    }
+}
+
+// =========================================================================
+// PREVIEWS
+// =========================================================================
+
+@Preview(name = "ThreatLockoutScreen - Active Countdown", showBackground = true, backgroundColor = 0xFF0C1B17)
+@Composable
+private fun ThreatLockoutScreenActivePreview() {
+    val sampleLogs = listOf(
+        ThreatLogEvent(
+            timestamp = System.currentTimeMillis() - 24000,
+            type = ThreatEventType.AUTH_FAILURE,
+            description = "Failed PIN authentication attempt (Attempt 1 of 3)",
+            severity = ThreatSeverity.WARNING
+        ),
+        ThreatLogEvent(
+            timestamp = System.currentTimeMillis() - 14000,
+            type = ThreatEventType.AUTH_FAILURE,
+            description = "Failed PIN authentication attempt (Attempt 2 of 3)",
+            severity = ThreatSeverity.WARNING
+        ),
+        ThreatLogEvent(
+            timestamp = System.currentTimeMillis() - 4000,
+            type = ThreatEventType.BRUTE_FORCE_TRIGGER,
+            description = "3 consecutive failures. Rate-limiting engaged for 60s",
+            severity = ThreatSeverity.CRITICAL
+        ),
+        ThreatLogEvent(
+            timestamp = System.currentTimeMillis() - 3000,
+            type = ThreatEventType.RAM_SANITIZED,
+            description = "RAM purged: Decrypted buffers and keys overwritten with zeroes",
+            severity = ThreatSeverity.INFO
+        )
+    )
+
+    SanctuaryTheme(darkTheme = true) {
+        ThreatLockoutScreen(
+            remainingSeconds = 42,
+            threatLogs = sampleLogs
+        )
+    }
+}
+
+@Preview(name = "ThreatLockoutScreen - Initial State", showBackground = true, backgroundColor = 0xFF0C1B17)
+@Composable
+private fun ThreatLockoutScreenInitialPreview() {
+    SanctuaryTheme(darkTheme = true) {
+        ThreatLockoutScreen(
+            remainingSeconds = 60,
+            threatLogs = emptyList()
+        )
     }
 }

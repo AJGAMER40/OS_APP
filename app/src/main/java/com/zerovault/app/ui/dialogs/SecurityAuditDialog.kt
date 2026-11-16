@@ -18,10 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -29,21 +26,37 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.zerovault.app.data.security.KeystoreDiagnostics
-import com.zerovault.app.ui.theme.BorderSubtle
-import com.zerovault.app.ui.theme.TextPrimary
-import com.zerovault.app.ui.theme.TextSecondary
-import com.zerovault.app.ui.theme.VaultBg
-import com.zerovault.app.ui.theme.VaultCyan
-import com.zerovault.app.ui.theme.VaultEmerald
-import com.zerovault.app.ui.theme.VaultSurface
-import com.zerovault.app.ui.theme.VaultSurfaceCard
+import com.zerovault.app.ui.components.SanctuaryButton
+import com.zerovault.app.ui.theme.SanctuaryTheme
+import com.zerovault.app.ui.theme.SanctuaryAmberLight
+import com.zerovault.app.ui.theme.SanctuaryBorderSubtle
+import com.zerovault.app.ui.theme.SanctuaryEmeraldLight
+import com.zerovault.app.ui.theme.SanctuaryEyebrowStyle
+import com.zerovault.app.ui.theme.SanctuaryGold
+import com.zerovault.app.ui.theme.SanctuaryGoldLight
+import com.zerovault.app.ui.theme.SanctuaryMuted
+import com.zerovault.app.ui.theme.SanctuaryPine
+import com.zerovault.app.ui.theme.SanctuaryPineBorder
+import com.zerovault.app.ui.theme.SanctuaryPineSurface
+import com.zerovault.app.ui.theme.SanctuaryTypography
+import com.zerovault.app.ui.theme.SanctuaryWhite
 
+/**
+ * SecurityAuditDialog inspects verified cryptographic and device security posture.
+ *
+ * Compliance:
+ * - Details are inspectable without creating deceptive certainty
+ * - Accurately differentiates between StrongBox HSM and Trusted Execution Environment (TEE)
+ * - Directly references real KeystoreDiagnostics properties
+ */
 @Composable
 fun SecurityAuditDialog(
     diagnostics: KeystoreDiagnostics,
@@ -56,8 +69,8 @@ fun SecurityAuditDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(VaultSurfaceCard)
-                .border(1.dp, BorderSubtle, RoundedCornerShape(16.dp))
+                .background(SanctuaryPineSurface)
+                .border(1.dp, SanctuaryPineBorder, RoundedCornerShape(16.dp))
                 .padding(20.dp)
         ) {
             // Header
@@ -73,22 +86,33 @@ fun SecurityAuditDialog(
                     Icon(
                         imageVector = Icons.Default.Shield,
                         contentDescription = null,
-                        tint = VaultCyan,
-                        modifier = Modifier.size(22.dp)
+                        tint = SanctuaryGold,
+                        modifier = Modifier.size(20.dp)
                     )
-                    Text(
-                        text = "Security Audit Report",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
+                    Column {
+                        Text(
+                            text = "SECURITY TELEMETRY",
+                            style = SanctuaryEyebrowStyle,
+                            color = SanctuaryGoldLight,
+                            fontSize = 9.sp
+                        )
+                        Text(
+                            text = "Enclave Security Audit",
+                            style = SanctuaryTypography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = SanctuaryWhite
+                        )
+                    }
                 }
 
-                IconButton(onClick = onDismiss) {
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(36.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = TextSecondary
+                        contentDescription = "Close Audit",
+                        tint = SanctuaryMuted
                     )
                 }
             }
@@ -98,98 +122,100 @@ fun SecurityAuditDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 400.dp)
+                    .heightIn(max = 380.dp)
                     .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Keystore Provider
                 AuditItem(
                     title = "Android Keystore Provider",
                     value = diagnostics.provider,
-                    status = "Hardware Enclave Active",
-                    statusColor = VaultEmerald
+                    status = if (diagnostics.hardwareBacked) "Hardware Keymaster Enclave" else "Software Keystore Entry",
+                    statusColor = if (diagnostics.hardwareBacked) SanctuaryEmeraldLight else SanctuaryAmberLight
                 )
 
+                // StrongBox / TEE Hardware Backing
+                AuditItem(
+                    title = "Hardware Security Module",
+                    value = if (diagnostics.strongBoxSupported) "Dedicated StrongBox Keymaster Chip" else "Trusted Execution Environment (TEE)",
+                    status = if (diagnostics.strongBoxSupported) "StrongBox HSM Available" else "SoC TEE Isolation",
+                    statusColor = SanctuaryEmeraldLight
+                )
+
+                // MasterKey Scheme
                 AuditItem(
                     title = "MasterKey Cryptographic Scheme",
-                    value = "AES-256 GCM (No Padding)",
-                    status = "NIST SP 800-38D Compliant",
-                    statusColor = VaultEmerald
+                    value = "${diagnostics.algorithm} (Alias: ${diagnostics.keyAlias})",
+                    status = "NIST SP 800-38D GCM",
+                    statusColor = SanctuaryEmeraldLight
                 )
 
+                // AndroidX EncryptedFile Scheme
                 AuditItem(
-                    title = "StrongBox / TEE Hardware Backing",
-                    value = if (diagnostics.strongBoxSupported) "Dedicated StrongBox HSM" else "Trusted Execution Environment (TEE)",
-                    status = if (diagnostics.strongBoxSupported) "Level 4 HSM" else "Level 3 TEE",
-                    statusColor = VaultEmerald
-                )
-
-                AuditItem(
-                    title = "AndroidX EncryptedFile Scheme",
+                    title = "EncryptedFile Scheme",
                     value = "FileEncryptionScheme.AES256_GCM_HKDF_4KB",
-                    status = "Chunked Authenticated Encryption",
-                    statusColor = VaultEmerald
+                    status = "Chunked HKDF Stream",
+                    statusColor = SanctuaryEmeraldLight
                 )
 
+                // EncryptedSharedPreferences
                 AuditItem(
                     title = "EncryptedSharedPreferences",
                     value = "Key: AES256-SIV | Value: AES256-GCM",
-                    status = "Synthetic Initialization Vector",
-                    statusColor = VaultEmerald
+                    status = "Synthetic IV Protected",
+                    statusColor = SanctuaryEmeraldLight
                 )
 
+                // Master PIN Protection
                 AuditItem(
-                    title = "Master PIN Protection",
+                    title = "Master PIN Stretched Derivation",
                     value = "PBKDF2 SHA-256 + 10,000 Iterations + CSPRNG Salt",
-                    status = "Anti-Dictionary Stretched",
-                    statusColor = VaultEmerald
+                    status = "Dictionary Hardened",
+                    statusColor = SanctuaryEmeraldLight
                 )
 
+                // Threat Monitor & Rate Limiting
                 AuditItem(
-                    title = "System Threat Monitor",
-                    value = "WorkManager 60s Quarantine on 3 Failures",
-                    status = "Brute-Force / DoS Defense",
-                    statusColor = VaultEmerald
+                    title = "Rate-Limiting Quarantine Defense",
+                    value = "WorkManager Background Task (60s Lockout on 3 Fails)",
+                    status = "Active Rate-Limiting",
+                    statusColor = SanctuaryEmeraldLight
                 )
 
+                // Volatile RAM Sanitization
                 AuditItem(
-                    title = "Volatile Memory Sanitization",
-                    value = "MemorySanitizer Zero-Filling",
-                    status = "Anti-RAM Dump / Forensics",
-                    statusColor = VaultEmerald
+                    title = "RAM Memory Sanitization",
+                    value = "MemorySanitizer Arrays.fill(0) Heap Scrubbing",
+                    status = "Volatile Overwrite",
+                    statusColor = SanctuaryEmeraldLight
                 )
 
+                // Screen Capture Protection
                 AuditItem(
-                    title = "Window Protection (FLAG_SECURE)",
+                    title = "Window Protection",
                     value = "WindowManager.LayoutParams.FLAG_SECURE",
-                    status = "Anti-Screen Recording / Task Snapshot",
-                    statusColor = VaultEmerald
+                    status = "Anti-Screen Recording",
+                    statusColor = SanctuaryEmeraldLight
                 )
 
+                // Sandbox & Cloud Restrictions
                 AuditItem(
-                    title = "Sandbox & Cloud Protection",
+                    title = "Cloud & Backup Boundary",
                     value = "allowBackup=false | cleartextTraffic=false",
-                    status = "Zero Cloud Exfiltration",
-                    statusColor = VaultEmerald
+                    status = "Offline Sandboxed",
+                    statusColor = SanctuaryEmeraldLight
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
+            SanctuaryButton(
+                text = "Close Audit Report",
                 onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = VaultCyan,
-                    contentColor = VaultBg
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "Acknowledge Audit",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
-            }
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+            )
         }
     }
 }
@@ -199,14 +225,14 @@ private fun AuditItem(
     title: String,
     value: String,
     status: String,
-    statusColor: androidx.compose.ui.graphics.Color
+    statusColor: Color
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(VaultSurface)
-            .border(1.dp, BorderSubtle, RoundedCornerShape(8.dp))
+            .background(SanctuaryPine)
+            .border(1.dp, SanctuaryBorderSubtle, RoundedCornerShape(8.dp))
             .padding(10.dp)
     ) {
         Row(
@@ -216,14 +242,15 @@ private fun AuditItem(
         ) {
             Text(
                 text = title,
-                fontSize = 12.sp,
+                style = SanctuaryTypography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
+                color = SanctuaryWhite,
+                fontSize = 12.sp
             )
 
             Box(
                 modifier = Modifier
-                    .clip(CircleShape)
+                    .clip(RoundedCornerShape(4.dp))
                     .background(statusColor.copy(alpha = 0.15f))
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
@@ -237,13 +264,34 @@ private fun AuditItem(
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(3.dp))
 
         Text(
             text = value,
             fontSize = 11.sp,
             fontFamily = FontFamily.Monospace,
-            color = TextSecondary
+            color = SanctuaryMuted
+        )
+    }
+}
+
+// =========================================================================
+// PREVIEWS
+// =========================================================================
+
+@Preview(name = "SecurityAuditDialog - Hardware Backed", showBackground = true, backgroundColor = 0xFF0C1B17)
+@Composable
+private fun SecurityAuditDialogPreview() {
+    SanctuaryTheme(darkTheme = true) {
+        SecurityAuditDialog(
+            diagnostics = KeystoreDiagnostics(
+                algorithm = "AES-256-GCM",
+                provider = "AndroidKeyStore",
+                strongBoxSupported = true,
+                hardwareBacked = true,
+                keyAlias = "_zerovault_master_key_"
+            ),
+            onDismiss = {}
         )
     }
 }

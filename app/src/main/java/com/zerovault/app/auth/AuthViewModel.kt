@@ -109,6 +109,18 @@ class AuthViewModel(
     init {
         // Sync threat state on init
         threatMonitor.checkAndRestoreLockoutState()
+        viewModelScope.launch {
+            threatMonitor.isLockdownActive.collect { isLocked ->
+                if (!isLocked && _mode.value == AuthScreenMode.LOCKDOWN) {
+                    _mode.value = if (securePreferencesManager.isPinConfigured()) {
+                        AuthScreenMode.LOGIN_PIN
+                    } else {
+                        AuthScreenMode.SETUP_ENTER
+                    }
+                    _errorMessage.value = null
+                }
+            }
+        }
     }
 
     fun onDigitEntered(digit: Char) {

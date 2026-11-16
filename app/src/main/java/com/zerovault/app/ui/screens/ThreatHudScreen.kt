@@ -1,11 +1,5 @@
 package com.zerovault.app.ui.screens
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,74 +12,81 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Radar
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zerovault.app.threat.ThreatEventType
 import com.zerovault.app.threat.ThreatLogEvent
-import com.zerovault.app.ui.theme.BorderSubtle
-import com.zerovault.app.ui.theme.TextMuted
-import com.zerovault.app.ui.theme.TextPrimary
-import com.zerovault.app.ui.theme.TextSecondary
-import com.zerovault.app.ui.theme.VaultBg
-import com.zerovault.app.ui.theme.VaultCrimson
-import com.zerovault.app.ui.theme.VaultCyan
-import com.zerovault.app.ui.theme.VaultEmerald
-import com.zerovault.app.ui.theme.VaultSurface
-import com.zerovault.app.ui.theme.VaultSurfaceCard
+import com.zerovault.app.threat.ThreatSeverity
+import com.zerovault.app.ui.components.SanctuaryCard
+import com.zerovault.app.ui.components.SanctuaryOutlinedButton
+import com.zerovault.app.ui.components.SanctuaryScaffold
+import com.zerovault.app.ui.components.SanctuaryStatusChip
+import com.zerovault.app.ui.components.SanctuaryStatusLevel
+import com.zerovault.app.ui.theme.SanctuaryAmberLight
+import com.zerovault.app.ui.theme.SanctuaryBorderSubtle
+import com.zerovault.app.ui.theme.SanctuaryCrimsonLight
+import com.zerovault.app.ui.theme.SanctuaryEmeraldLight
+import com.zerovault.app.ui.theme.SanctuaryEyebrowStyle
+import com.zerovault.app.ui.theme.SanctuaryGold
+import com.zerovault.app.ui.theme.SanctuaryGoldLight
+import com.zerovault.app.ui.theme.SanctuaryMuted
+import com.zerovault.app.ui.theme.SanctuaryPine
+import com.zerovault.app.ui.theme.SanctuaryPineBorder
+import com.zerovault.app.ui.theme.SanctuaryPineSurface
+import com.zerovault.app.ui.theme.SanctuaryStone
+import com.zerovault.app.ui.theme.SanctuaryTheme
+import com.zerovault.app.ui.theme.SanctuaryTypography
+import com.zerovault.app.ui.theme.SanctuaryWhite
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * ThreatHudScreen provides a dense, inspectable telemetry dashboard for runtime security events.
+ *
+ * Design & Security Principles:
+ * - High density of telemetry without theatrical flashing or deceptive certainty
+ * - Honest statistics derived from real session event logs
+ * - Quick inspection of verified Keystore hardware specifications
+ * - Chronological event log with clean monospace timestamps and semantic status badges
+ */
 @Composable
 fun ThreatHudScreen(
     threatLogs: List<ThreatLogEvent>,
     onOpenSecurityAudit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "hud_radar")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "hudPulseAlpha"
-    )
+    val failures = threatLogs.count { it.type == ThreatEventType.AUTH_FAILURE }
+    val lockouts = threatLogs.count {
+        it.type == ThreatEventType.BRUTE_FORCE_TRIGGER || it.type == ThreatEventType.WORKMANAGER_ENGAGED
+    }
+    val duressTrips = threatLogs.count { it.type == ThreatEventType.COERCION_DURESS }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(VaultBg)
-    ) {
+    SanctuaryScaffold(
+        modifier = modifier.fillMaxSize()
+    ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(innerPadding)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Header
             item {
@@ -94,145 +95,112 @@ fun ThreatHudScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(VaultSurfaceCard)
-                                .border(1.dp, BorderSubtle, RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Radar,
-                                contentDescription = null,
-                                tint = VaultCyan,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "THREAT MONITOR HUD",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace,
-                                color = TextPrimary
-                            )
-                            Text(
-                                text = "LIVE INTRUSION TELEMETRY",
-                                fontSize = 9.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = VaultCyan,
-                                letterSpacing = 1.sp
-                            )
-                        }
-                    }
-
-                    // Pulse indicator
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(VaultSurfaceCard)
-                            .border(1.dp, VaultEmerald.copy(alpha = pulseAlpha), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                    ) {
+                    Column {
                         Text(
-                            text = "ARMED",
-                            fontSize = 10.sp,
+                            text = "SECURITY TELEMETRY",
+                            style = SanctuaryEyebrowStyle,
+                            color = SanctuaryGoldLight,
+                            fontSize = 10.sp
+                        )
+                        Text(
+                            text = "Threat Posture & Audit",
+                            style = SanctuaryTypography.headlineSmall,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace,
-                            color = VaultEmerald
+                            color = SanctuaryWhite
                         )
                     }
+
+                    SanctuaryStatusChip(
+                        label = if (lockouts > 0) "LOCKOUT LOGGED" else "POSTURE SECURE",
+                        statusLevel = if (lockouts > 0) SanctuaryStatusLevel.LOCKDOWN else SanctuaryStatusLevel.SECURE
+                    )
                 }
             }
 
-            // Stat Cards Row
+            // Stat Cards Row (Denser information layout)
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val failures = threatLogs.count { it.type == ThreatEventType.AUTH_FAILURE }
-                    val lockouts = threatLogs.count { it.type == ThreatEventType.BRUTE_FORCE_TRIGGER || it.type == ThreatEventType.WORKMANAGER_ENGAGED }
-
                     HudStatCard(
                         modifier = Modifier.weight(1f),
                         label = "FAILED PROBES",
                         value = "$failures",
-                        color = if (failures > 0) VaultCrimson else VaultEmerald
+                        color = if (failures > 0) SanctuaryCrimsonLight else SanctuaryEmeraldLight
                     )
                     HudStatCard(
                         modifier = Modifier.weight(1f),
-                        label = "LOCKOUTS",
+                        label = "QUARANTINES",
                         value = "$lockouts",
-                        color = if (lockouts > 0) VaultCrimson else VaultCyan
+                        color = if (lockouts > 0) SanctuaryCrimsonLight else SanctuaryGold
                     )
                     HudStatCard(
                         modifier = Modifier.weight(1f),
-                        label = "DURESS SAFE",
-                        value = "ARMED",
-                        color = VaultCyan
+                        label = "DURESS ALERTS",
+                        value = "$duressTrips",
+                        color = if (duressTrips > 0) SanctuaryAmberLight else SanctuaryGoldLight
                     )
                 }
             }
 
-            // Audit Action Button
+            // Hardware Keystore Diagnostics Trigger
             item {
-                Button(
+                SanctuaryOutlinedButton(
+                    text = "Inspect Keystore Specifications",
+                    leadingIcon = Icons.Default.Shield,
                     onClick = onOpenSecurityAudit,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = VaultSurfaceCard),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Security,
-                        contentDescription = null,
-                        tint = VaultCyan,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "VIEW HARDWARE KEYSTORE SPECIFICATIONS",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace,
-                        color = TextPrimary
-                    )
-                }
-            }
-
-            // Event Log Section Title
-            item {
-                Text(
-                    text = "DEFENSE EVENT CHRONOLOGY",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    color = TextSecondary,
-                    letterSpacing = 1.sp
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
                 )
             }
 
+            // Event Chronology Section Header
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "EVENT AUDIT CHRONOLOGY (${threatLogs.size})",
+                        style = SanctuaryEyebrowStyle,
+                        color = SanctuaryGold,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            // Empty or Populated Log List
             if (threatLogs.isEmpty()) {
                 item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(VaultSurfaceCard)
-                            .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
+                    SanctuaryCard(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "No security events recorded in this session.\nVault integrity pristine.",
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = TextMuted,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "No security events recorded in this session.",
+                                style = SanctuaryTypography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = SanctuaryWhite,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Authentication probes, quarantine lockouts, and memory sanitizations will appear here chronologically.",
+                                style = SanctuaryTypography.bodySmall,
+                                color = SanctuaryMuted,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
                 }
             } else {
@@ -256,28 +224,28 @@ private fun HudStatCard(
     color: Color,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(VaultSurfaceCard)
-            .border(1.dp, BorderSubtle, RoundedCornerShape(10.dp))
-            .padding(12.dp)
-    ) {
-        Text(
-            text = label,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.SemiBold,
-            fontFamily = FontFamily.Monospace,
-            color = TextMuted
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Black,
-            fontFamily = FontFamily.Monospace,
-            color = color
-        )
+    SanctuaryCard(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Text(
+                text = label,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.Monospace,
+                color = SanctuaryMuted
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = value,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                color = color
+            )
+        }
     }
 }
 
@@ -287,61 +255,109 @@ private fun ThreatHudLogCard(event: ThreatLogEvent) {
     val timeStr = formatter.format(Date(event.timestamp))
 
     val (badgeText, badgeColor) = when (event.type) {
-        ThreatEventType.AUTH_FAILURE -> "INTRUSION PROBE" to VaultCrimson
-        ThreatEventType.BRUTE_FORCE_TRIGGER -> "BRUTE FORCE TRIP" to VaultCrimson
-        ThreatEventType.WORKMANAGER_ENGAGED -> "LOCKOUT ACTIVATED" to VaultCrimson
-        ThreatEventType.AUTH_SUCCESS -> "AUTHORIZED ACCESS" to VaultEmerald
-        ThreatEventType.COERCION_DURESS -> "DURESS COERCION" to Color(0xFFFFB300)
-        ThreatEventType.RAM_SANITIZED -> "RAM WIPED" to VaultCyan
-        ThreatEventType.LOCKOUT_EXPIRED -> "COOLDOWN ENDED" to VaultEmerald
-        ThreatEventType.MANUAL_LOCK -> "MANUAL LOCK" to TextSecondary
+        ThreatEventType.AUTH_FAILURE -> "INTRUSION PROBE" to SanctuaryCrimsonLight
+        ThreatEventType.BRUTE_FORCE_TRIGGER -> "BRUTE FORCE TRIP" to SanctuaryCrimsonLight
+        ThreatEventType.WORKMANAGER_ENGAGED -> "QUARANTINE ACTIVE" to SanctuaryCrimsonLight
+        ThreatEventType.AUTH_SUCCESS -> "AUTHORIZED ACCESS" to SanctuaryEmeraldLight
+        ThreatEventType.COERCION_DURESS -> "DURESS COERCION" to SanctuaryAmberLight
+        ThreatEventType.RAM_SANITIZED -> "RAM WIPED" to SanctuaryEmeraldLight
+        ThreatEventType.LOCKOUT_EXPIRED -> "COOLDOWN ENDED" to SanctuaryEmeraldLight
+        ThreatEventType.MANUAL_LOCK -> "MANUAL LOCK" to SanctuaryMuted
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(VaultSurfaceCard)
-            .border(1.dp, BorderSubtle, RoundedCornerShape(10.dp))
-            .padding(12.dp)
+    SanctuaryCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(badgeColor.copy(alpha = 0.15f))
-                    .border(1.dp, badgeColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(badgeColor.copy(alpha = 0.15f))
+                        .border(1.dp, badgeColor.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = badgeText,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace,
+                        color = badgeColor
+                    )
+                }
+
                 Text(
-                    text = badgeText,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
+                    text = timeStr,
+                    fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = badgeColor
+                    color = SanctuaryStone
                 )
             }
 
+            Spacer(modifier = Modifier.height(6.dp))
+
             Text(
-                text = timeStr,
-                fontSize = 10.sp,
+                text = event.description,
+                fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace,
-                color = TextMuted
+                color = SanctuaryWhite,
+                lineHeight = 15.sp
             )
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(8.dp))
+// =========================================================================
+// PREVIEWS
+// =========================================================================
 
-        Text(
-            text = event.description,
-            fontSize = 12.sp,
-            fontFamily = FontFamily.Monospace,
-            color = TextPrimary,
-            lineHeight = 16.sp
+@Preview(name = "ThreatHud - Populated", showBackground = true, backgroundColor = 0xFF0C1B17)
+@Composable
+private fun ThreatHudPopulatedPreview() {
+    val sampleLogs = listOf(
+        ThreatLogEvent(
+            timestamp = System.currentTimeMillis() - 60000,
+            type = ThreatEventType.AUTH_FAILURE,
+            description = "Failed authentication attempt (Attempt 1 of 3)",
+            severity = ThreatSeverity.WARNING
+        ),
+        ThreatLogEvent(
+            timestamp = System.currentTimeMillis() - 30000,
+            type = ThreatEventType.AUTH_SUCCESS,
+            description = "Primary enclave master PIN verified successfully",
+            severity = ThreatSeverity.INFO
+        ),
+        ThreatLogEvent(
+            timestamp = System.currentTimeMillis() - 5000,
+            type = ThreatEventType.RAM_SANITIZED,
+            description = "Volatile memory purged: ephemeral secret buffers zeroed",
+            severity = ThreatSeverity.INFO
+        )
+    )
+
+    SanctuaryTheme(darkTheme = true) {
+        ThreatHudScreen(
+            threatLogs = sampleLogs,
+            onOpenSecurityAudit = {}
+        )
+    }
+}
+
+@Preview(name = "ThreatHud - Empty Pristine", showBackground = true, backgroundColor = 0xFF0C1B17)
+@Composable
+private fun ThreatHudEmptyPreview() {
+    SanctuaryTheme(darkTheme = true) {
+        ThreatHudScreen(
+            threatLogs = emptyList(),
+            onOpenSecurityAudit = {}
         )
     }
 }

@@ -20,9 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -34,20 +31,34 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.zerovault.app.ui.theme.BorderSubtle
-import com.zerovault.app.ui.theme.TextMuted
-import com.zerovault.app.ui.theme.TextPrimary
-import com.zerovault.app.ui.theme.TextSecondary
-import com.zerovault.app.ui.theme.VaultBg
-import com.zerovault.app.ui.theme.VaultCyan
-import com.zerovault.app.ui.theme.VaultEmerald
-import com.zerovault.app.ui.theme.VaultSurface
-import com.zerovault.app.ui.theme.VaultSurfaceCard
+import com.zerovault.app.ui.components.SanctuaryButton
+import com.zerovault.app.ui.theme.SanctuaryBorderSubtle
+import com.zerovault.app.ui.theme.SanctuaryEmeraldLight
+import com.zerovault.app.ui.theme.SanctuaryEyebrowStyle
+import com.zerovault.app.ui.theme.SanctuaryGold
+import com.zerovault.app.ui.theme.SanctuaryGoldLight
+import com.zerovault.app.ui.theme.SanctuaryMuted
+import com.zerovault.app.ui.theme.SanctuaryPine
+import com.zerovault.app.ui.theme.SanctuaryPineBorder
+import com.zerovault.app.ui.theme.SanctuaryPineSurface
+import com.zerovault.app.ui.theme.SanctuaryStone
+import com.zerovault.app.ui.theme.SanctuaryTypography
+import com.zerovault.app.ui.theme.SanctuaryWhite
 import com.zerovault.app.vault.ActivePreview
 
+/**
+ * FilePreviewDialog presents decrypted file content ephemerally in RAM.
+ *
+ * Security & Lifecycle Invariants:
+ * - Content is never written to public caches, shared storage, or temporary disk files
+ * - Volatile RAM buffer is overwritten with zeroes by ActivePreview.wipe() upon dismissal
+ * - Window is protected by FLAG_SECURE preventing screenshot capture and task switcher leakage
+ */
 @Composable
 fun FilePreviewDialog(
     activePreview: ActivePreview,
@@ -77,8 +88,8 @@ fun FilePreviewDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(VaultSurfaceCard)
-                .border(1.dp, BorderSubtle, RoundedCornerShape(16.dp))
+                .background(SanctuaryPineSurface)
+                .border(1.dp, SanctuaryPineBorder, RoundedCornerShape(16.dp))
                 .padding(20.dp)
         ) {
             // Header
@@ -93,57 +104,71 @@ fun FilePreviewDialog(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Security,
+                        imageVector = Icons.Default.Lock,
                         contentDescription = null,
-                        tint = VaultCyan,
+                        tint = SanctuaryGold,
                         modifier = Modifier.size(20.dp)
                     )
-                    Text(
-                        text = record.originalFileName,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary,
-                        maxLines = 1
-                    )
+                    Column {
+                        Text(
+                            text = "EPHEMERAL DECRYPTION",
+                            style = SanctuaryEyebrowStyle,
+                            color = SanctuaryGoldLight,
+                            fontSize = 9.sp
+                        )
+                        Text(
+                            text = record.originalFileName,
+                            style = SanctuaryTypography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = SanctuaryWhite,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
 
-                IconButton(onClick = onDismiss) {
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(36.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = TextSecondary
+                        contentDescription = "Close & Wipe RAM",
+                        tint = SanctuaryMuted
                     )
                 }
             }
 
-            // Security ephemeral notice
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Ephemeral RAM Notice
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(VaultBg)
-                    .border(1.dp, VaultEmerald.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                    .padding(8.dp)
+                    .background(SanctuaryPine)
+                    .border(1.dp, SanctuaryEmeraldLight.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                    .padding(10.dp)
             ) {
                 Text(
-                    text = "EPHEMERAL RAM BUFFER: Decrypted payload exists solely in volatile memory and will be zero-sanitized upon close.",
+                    text = "VOLATILE RAM BUFFER: Decrypted payload exists solely in application heap memory. It will be overwritten with zeroes immediately upon closing.",
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
-                    color = VaultEmerald,
-                    lineHeight = 13.sp
+                    color = SanctuaryEmeraldLight,
+                    lineHeight = 14.sp
                 )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Body preview
+            // Decrypted Preview Container
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 340.dp)
+                    .heightIn(max = 320.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(VaultSurface)
-                    .border(1.dp, BorderSubtle, RoundedCornerShape(8.dp))
+                    .background(SanctuaryPine)
+                    .border(1.dp, SanctuaryBorderSubtle, RoundedCornerShape(8.dp))
                     .padding(12.dp)
             ) {
                 if (bitmap != null) {
@@ -164,37 +189,38 @@ fun FilePreviewDialog(
                             text = activePreview.textContent,
                             fontSize = 12.sp,
                             fontFamily = FontFamily.Monospace,
-                            color = TextPrimary,
+                            color = SanctuaryWhite,
                             lineHeight = 16.sp
                         )
                     }
                 } else {
-                    // Binary File Overview
+                    // Binary Payload Overview
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp),
+                            .padding(6.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Binary Payload Decrypted Successfully",
-                            fontSize = 13.sp,
+                            text = "Binary Payload Decrypted in RAM",
+                            style = SanctuaryTypography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
+                            color = SanctuaryWhite
                         )
 
                         Text(
                             text = "MIME Type: ${record.mimeType}\nSize: ${record.sizeBytes} bytes\nSHA-256: ${record.sha256Checksum}",
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace,
-                            color = TextSecondary,
+                            color = SanctuaryMuted,
                             lineHeight = 16.sp
                         )
 
                         Text(
-                            text = "Use 'Export Decrypted Copy' to write this payload to an external app or storage.",
-                            fontSize = 11.sp,
-                            color = TextMuted
+                            text = "Use 'Export Decrypted Copy' from the vault list if you need to write this payload to external storage.",
+                            style = SanctuaryTypography.bodySmall,
+                            color = SanctuaryStone,
+                            fontSize = 11.sp
                         )
                     }
                 }
@@ -202,22 +228,45 @@ fun FilePreviewDialog(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Dismiss Button
-            Button(
+            // Close & Zero-Sanitize RAM Button
+            SanctuaryButton(
+                text = "Close & Zero-Sanitize RAM",
                 onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = VaultCyan,
-                    contentColor = VaultBg
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "Close & Wipe RAM",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
-            }
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+            )
         }
+    }
+}
+
+// =========================================================================
+// PREVIEWS
+// =========================================================================
+
+@Preview(name = "FilePreviewDialog - Text Preview", showBackground = true, backgroundColor = 0xFF0C1B17)
+@Composable
+private fun FilePreviewDialogTextPreview() {
+    val sampleRecord = com.zerovault.app.data.model.VaultFileRecord(
+        id = "1",
+        originalFileName = "Confidential_Recovery_Phrases.txt",
+        encryptedFileName = "enc_3b8a1c99.vault",
+        mimeType = "text/plain",
+        sizeBytes = 256L,
+        encryptedAt = System.currentTimeMillis(),
+        sha256Checksum = "e5d4c3b2a1"
+    )
+    val samplePreview = ActivePreview(
+        record = sampleRecord,
+        data = "sample payload".toByteArray(),
+        isText = true,
+        textContent = "1. alpha\n2. bravo\n3. charlie\n4. delta\n5. echo\n6. foxtrot"
+    )
+
+    com.zerovault.app.ui.theme.SanctuaryTheme(darkTheme = true) {
+        FilePreviewDialog(
+            activePreview = samplePreview,
+            onDismiss = {}
+        )
     }
 }
